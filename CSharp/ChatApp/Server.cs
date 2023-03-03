@@ -10,18 +10,19 @@ using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using SocketIOSharp.Server;
+using SocketIOSharp.Server.Client;
 
 using ChatApp.Constant;
 
 namespace ChatApp
 {
-    public class Server
+    public class Server : AbstractServer
     {
         private const int Port = 3001;
         private readonly Users users = new Users();
         private readonly SocketIOServer io = new SocketIOServer();
 
-        public void Start()
+        public override void Start()
         {
             io.OnConnection(socket =>
             {
@@ -31,9 +32,9 @@ namespace ChatApp
             });
 
             var host = new WebHostBuilder()
-                .UseKestrel()
-                .UseUrls($"http://localhost:{Port}")
-                .Configure(app => app.UseWebSockets().Run(async context => await io.ExecuteAsync(context))))
+                    .UseKestrel()
+                    .UseUrls($"http://localhost:{Port}")
+                    .Configure(app => app.UseWebSockets().Run(async context => await io.ExecuteAsync(context))))
                 .Build();
             host.Run();
             Console.WriteLine($"Server has started.");
@@ -45,16 +46,19 @@ namespace ChatApp
             {
                 try
                 {
-                    var user = users.AddUser(socket.Id, name);
+                    var user = users.AddUser(socket.Ic, name);
 
-                    socket.Emit(SOCKET_COMMAND.serviceMessage, new { username = SERVICE_USER_NAME.admin, text = $"You joined the chat" });
-                    socket.Broadcast.Emit(SOCKET_COMMAND.message, new { username = SERVICE_USER_NAME.admin, text = $"User {user.Name} has joined the chat" });
+                    socket.Emit(SOCKET_COMMAND.serviceMessage,
+                        new { username = SERVICE_USER_NAME.admin, text = $"You joined the chat" });
+                    socket.Broadcast.Emit(SOCKET_COMMAND.message,
+                        new { username = SERVICE_USER_NAME.admin, text = $"User {user.Name} has joined the chat" });
 
                     callback?.Invoke();
                 }
                 catch (Exception error)
                 {
-                    socket.Emit(SOCKET_COMMAND.usernameError, new { username = SERVICE_USER_NAME.admin, text = error.Message });
+                    socket.Emit(SOCKET_COMMAND.usernameError,
+                        new { username = SERVICE_USER_NAME.admin, text = error.Message });
                 }
             });
         }
@@ -76,7 +80,8 @@ namespace ChatApp
                 var user = users.RemoveUser(socket.Id);
                 if (user != null)
                 {
-                    io.Emit(SOCKET_COMMAND.message, new { username = SERVICE_USER_NAME.admin, text = $"User {user.Name} has left the chat" });
+                    io.Emit(SOCKET_COMMAND.message,
+                        new { username = SERVICE_USER_NAME.admin, text = $"User {user.Name} has left the chat" });
                 }
             });
         }
@@ -127,3 +132,4 @@ namespace ChatApp
         public string Id { get; }
         public string Name { get; }
     }
+}

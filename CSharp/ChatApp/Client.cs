@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
-using SocketIOClientDotNet;
+using Quobject.SocketIoClientDotNet.Client;
+//using System.Net.Sockets.Socket
 using ConsoleReader = System.Console;
 
 using ChatApp;
@@ -9,6 +10,11 @@ using ChatApp.Interface;
 public class Client : AbstractClient
 {
     private bool isJoined = false;
+
+    public Client()
+    {
+
+    }
 
     public override async Task Start()
     {
@@ -32,7 +38,7 @@ public class Client : AbstractClient
     private void OnMessage(Message message)
     {
         Console.SetCursorPosition(0, Console.CursorTop);
-        Console.WriteLine($"{message.Username}: {message.Text}");
+        Console.WriteLine($"{message.username}: {message.text}");
         ConsoleReader.Out.WriteAsync("> ");
     }
 
@@ -75,7 +81,7 @@ public class Client : AbstractClient
 
 class Program
 {
-    static async Task Main(string[] args)
+    static async Task RunClientMain(string[] args)
     {
         var client = new Client();
         await client.Start();

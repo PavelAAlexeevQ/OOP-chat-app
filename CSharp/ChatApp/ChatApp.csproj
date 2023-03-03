@@ -10,6 +10,8 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
       <PackageReference Include="SocketIoClientDotNet" Version="0.9.13" />
+      <PackageReference Include="SocketIoClientDotNet.Standard" Version="0.0.6" />
+      <PackageReference Include="SocketIOSharp" Version="2.0.3" />
     </ItemGroup>
 
 </Project>
