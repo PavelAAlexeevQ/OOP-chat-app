@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Quobject.SocketIoClientDotNet.Client;
+//using Quobject.SocketIoClientDotNet.Client;
 //using System.Net.Sockets.Socket
 using ConsoleReader = System.Console;
 
 using ChatApp;
 using ChatApp.Constant;
 using ChatApp.Interface;
+using SocketIOSharp.Server.Client;
+
 public class Client : AbstractClient
 {
     private bool isJoined = false;
-
     public Client()
     {
 
@@ -29,8 +30,8 @@ public class Client : AbstractClient
     {
         await ConsoleReader.Out.WriteAsync("Please enter your username: ");
         var username = ConsoleReader.In.ReadLine().Trim();
-        IdleTimer.ResetTimeout();
-        Socket.EmitAsync("join", username);
+        idleTimer.ResetTimeout();
+        socket.Emit(SOCKET_COMMAND.join, username);
         isJoined = true;
         ConsoleReader.Out.WriteAsync("> ");
     }
@@ -44,26 +45,26 @@ public class Client : AbstractClient
 
     private async Task HandleUsernameError()
     {
-        Socket.On(SOCKET_COMMAND.usernameError, async (message) =>
+        socket.On(SOCKET_COMMAND.usernameError, async (message) =>
         {
-            OnMessage(message.ToObject<Message>());
+            OnMessage((Message)message);
             await GetUsername();
         });
     }
 
     private void ListenIncomingMessages()
     {
-        Socket.On(SOCKET_COMMAND.message, (message) =>
+        socket.On(SOCKET_COMMAND.message, (message) =>
         {
             if (isJoined)
             {
-                OnMessage(message.ToObject<Message>());
+                OnMessage((Message)message);
             }
         });
 
-        Socket.On(SOCKET_COMMAND.serviceMessage, (message) =>
+        socket.On(SOCKET_COMMAND.serviceMessage, (message) =>
         {
-            OnMessage(message.ToObject<Message>());
+            OnMessage((Message)message);
         });
     }
 
@@ -72,8 +73,8 @@ public class Client : AbstractClient
         while (true)
         {
             var text = await ConsoleReader.In.ReadLineAsync();
-            IdleTimer.ResetTimeout();
-            Socket.EmitAsync(SOCKET_COMMAND.sendMessage, text.Trim());
+            idleTimer.ResetTimeout();
+            socket.Emit(SOCKET_COMMAND.sendMessage, text.Trim());
             ConsoleReader.Out.WriteAsync("> ");
         }
     }

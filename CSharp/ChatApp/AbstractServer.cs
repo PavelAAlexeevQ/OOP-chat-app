@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+//using System.Net.WebSockets;
+using Quobject.SocketIoClientDotNet.Client;
 
 using ChatApp.Interface;
 
@@ -58,10 +60,9 @@ namespace ChatApp
             }
         }
 
-        protected virtual async Task HandleSocket(WebSocket socket)
+        protected virtual async Task HandleSocket(Socket socket)
         {
             // Add socket handling logic
         }
-    }
     }
 }

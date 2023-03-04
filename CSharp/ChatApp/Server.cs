@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using SocketIOSharp.Server;
 using SocketIOSharp.Server.Client;
+using Quobject.SocketIoClientDotNet.Client;
 
 using ChatApp.Constant;
 
@@ -34,19 +35,19 @@ namespace ChatApp
             var host = new WebHostBuilder()
                     .UseKestrel()
                     .UseUrls($"http://localhost:{Port}")
-                    .Configure(app => app.UseWebSockets().Run(async context => await io.ExecuteAsync(context))))
+                    .Configure(app => app.UseWebSockets().Run(async context => await io.ExecuteAsync(context)))
                 .Build();
             host.Run();
             Console.WriteLine($"Server has started.");
         }
 
-        private void OnJoin(SocketIOSocket socket)
+        private void OnJoin(Socket socket)
         {
             socket.On(SOCKET_COMMAND.join, (name, callback) =>
             {
                 try
                 {
-                    var user = users.AddUser(socket.Ic, name);
+                    var user = users.AddUser(socket.id, name);
 
                     socket.Emit(SOCKET_COMMAND.serviceMessage,
                         new { username = SERVICE_USER_NAME.admin, text = $"You joined the chat" });
