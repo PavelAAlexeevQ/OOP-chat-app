@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 
 namespace ChatApp
@@ -6,9 +7,10 @@ namespace ChatApp
     {
         static async Task Main(string[] args)
         {
-            var server = new Server();
+            var server = new ChatHub();
             server.Start();
-            await Task.CompletedTask;
+            Console.WriteLine("Server has started.");
+            Console.ReadLine();
         }
     }
 }

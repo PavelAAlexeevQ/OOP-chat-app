@@ -1,90 +1,92 @@
 ﻿using System;
 using System.Threading.Tasks;
-//using Quobject.SocketIoClientDotNet.Client;
-//using System.Net.Sockets.Socket
-using ConsoleReader = System.Console;
+using Microsoft.AspNetCore.SignalR.Client;
 
-using ChatApp;
-using ChatApp.Constant;
 using ChatApp.Interface;
-using SocketIOSharp.Server.Client;
 
-public class Client : AbstractClient
+namespace ChatApp
 {
-    private bool isJoined = false;
-    public Client()
+    public class Client
     {
+        private bool isJoined = false;
+        private readonly HubConnection connection;
 
-    }
-
-    public override async Task Start()
-    {
-        await GetUsername();
-        await HandleUsernameError();
-
-        ListenIncomingMessages();
-        OnMessageSent();
-    }
-
-    private async Task GetUsername()
-    {
-        await ConsoleReader.Out.WriteAsync("Please enter your username: ");
-        var username = ConsoleReader.In.ReadLine().Trim();
-        idleTimer.ResetTimeout();
-        socket.Emit(SOCKET_COMMAND.join, username);
-        isJoined = true;
-        ConsoleReader.Out.WriteAsync("> ");
-    }
-
-    private void OnMessage(Message message)
-    {
-        Console.SetCursorPosition(0, Console.CursorTop);
-        Console.WriteLine($"{message.username}: {message.text}");
-        ConsoleReader.Out.WriteAsync("> ");
-    }
-
-    private async Task HandleUsernameError()
-    {
-        socket.On(SOCKET_COMMAND.usernameError, async (message) =>
+        public Client(string url)
         {
-            OnMessage((Message)message);
-            await GetUsername();
-        });
-    }
+            this.connection = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+        }
 
-    private void ListenIncomingMessages()
-    {
-        socket.On(SOCKET_COMMAND.message, (message) =>
+        public async Task Start()
         {
-            if (isJoined)
+            await this.connection.StartAsync();
+
+            await this.GetUsername();
+            await this.HandleUsernameError();
+
+            this.ListenIncomingMessages();
+            await this.OnMessageSent();
+        }
+
+        private async Task GetUsername()
+        {
+            Console.Write("Please enter your username: ");
+            string username = Console.ReadLine().Trim();
+
+            await this.connection.InvokeAsync("join", username);
+            this.isJoined = true;
+        }
+
+        private void OnMessage(Message message)
+        {
+            Console.Write($"\r\x1b[K{message.username}: {message.text}\n> ");
+        }
+
+        private async Task HandleUsernameError()
+        {
+            this.connection.On<Message>("usernameError", async (message) =>
             {
-                OnMessage((Message)message);
+                this.OnMessage(message);
+                await this.GetUsername();
+            });
+        }
+
+        private void ListenIncomingMessages()
+        {
+            this.connection.On<Message>("message", (message) =>
+            {
+                if (this.isJoined)
+                {
+                    this.OnMessage(message);
+                }
+            });
+
+            this.connection.On<Message>("serviceMessage", (message) =>
+            {
+                this.OnMessage(message);
+            });
+        }
+
+        private async Task OnMessageSent()
+        {
+            Console.Write("> ");
+            while (true)
+            {
+                string text = Console.ReadLine().Trim();
+                await this.connection.InvokeAsync("sendMessage", text);
+                Console.Write("> ");
             }
-        });
-
-        socket.On(SOCKET_COMMAND.serviceMessage, (message) =>
-        {
-            OnMessage((Message)message);
-        });
-    }
-
-    private async Task OnMessageSent()
-    {
-        while (true)
-        {
-            var text = await ConsoleReader.In.ReadLineAsync();
-            idleTimer.ResetTimeout();
-            socket.Emit(SOCKET_COMMAND.sendMessage, text.Trim());
-            ConsoleReader.Out.WriteAsync("> ");
         }
     }
-}
 
-class Program
-{
-    static async Task RunClientMain(string[] args)
+    /*class Program
     {
-        var client = new Client();
-        await client.Start();
-    }
+        static async Task Main(string[] args)
+        {
+            string url = "http://localhost:5000/chatHub";
+            var client = new Client(url);
+            await client.Start();
+        }
+    }*/
 }

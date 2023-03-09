@@ -1,68 +1,53 @@
-using System;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-//using System.Net.WebSockets;
-using Quobject.SocketIoClientDotNet.Client;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 
 using ChatApp.Interface;
-
+using ChatApp.Constant;
 
 namespace ChatApp
 {
-    public abstract class AbstractServer
+    public abstract class AbstractServer : Hub
     {
-        protected IApplicationBuilder app;
-        protected IWebHost host;
-        protected IServiceProvider serviceProvider;
+        protected readonly IWebHostBuilder builder;
+        protected readonly Users users = new Users();
 
-        public virtual void Start()
+        public AbstractServer()
         {
-            host = new WebHostBuilder()
-                .UseKestrel()
+            builder = new WebHostBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.AddConsole();
+                })
                 .ConfigureServices(services =>
                 {
-                    services.AddSingleton<Users>();
+                    services.AddSignalR();
                 })
                 .Configure(app =>
                 {
-                    this.app = app;
+                    app.UseRouting();
 
-                    // Add Socket.IO middleware
-                    app.UseWebSockets();
-                    app.Use(SocketIoMiddleware);
-
-                    // Add custom middleware
-                    Configure(app);
-                })
-                .Build();
-
-            serviceProvider = host.Services;
-            host.Run();
+                    app.UseEndpoints(endpoints =>
+                    {
+                        endpoints.MapHub<YourHub>("/yourhub");
+                    });
+                });
         }
 
-        protected virtual void Configure(IApplicationBuilder app) { }
+        public abstract void Start();
+    }
 
-        private async Task SocketIoMiddleware(HttpContext context, Func<Task> next)
-        {
-            if (context.WebSockets.IsWebSocketRequest)
-            {
-                var socket = await context.WebSockets.AcceptWebSocketAsync();
-
-                // Add socket handling logic
-                await HandleSocket(socket);
-            }
-            else
-            {
-                await next();
-            }
-        }
-
-        protected virtual async Task HandleSocket(Socket socket)
-        {
-            // Add socket handling logic
-        }
+    public class YourHub : Hub
+    {
+        // Your hub implementation goes here
     }
 }

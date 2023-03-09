@@ -1,136 +1,83 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using SocketIOSharp.Server;
-using SocketIOSharp.Server.Client;
-using Quobject.SocketIoClientDotNet.Client;
+using System;
+using System.Threading.Tasks;
 
+using ChatApp.Interface;
 using ChatApp.Constant;
 
 namespace ChatApp
 {
-    public class Server : AbstractServer
+    public class Startup
     {
-        private const int Port = 3001;
-        private readonly Users users = new Users();
-        private readonly SocketIOServer io = new SocketIOServer();
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddCors();
+            services.AddSignalR();
+        }
 
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            app.UseRouting();
+            app.UseCors(builder => builder
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader());
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapHub<ChatHub>("/chatHub");
+            });
+        }
+    }
+
+    public class ChatHub : AbstractServer
+    {
+        private readonly Users _users = new Users();
+
+        public ChatHub()
+        {
+            var host = builder.Build();
+        }
         public override void Start()
         {
-            io.OnConnection(socket =>
-            {
-                OnJoin(socket);
-                ListenMessages(socket);
-                OnDisconnect(socket);
-            });
-
-            var host = new WebHostBuilder()
-                    .UseKestrel()
-                    .UseUrls($"http://localhost:{Port}")
-                    .Configure(app => app.UseWebSockets().Run(async context => await io.ExecuteAsync(context)))
-                .Build();
-            host.Run();
-            Console.WriteLine($"Server has started.");
         }
 
-        private void OnJoin(Socket socket)
+        public async Task SendMessage(string messageText)
         {
-            socket.On(SOCKET_COMMAND.join, (name, callback) =>
-            {
-                try
-                {
-                    var user = users.AddUser(socket.id, name);
-
-                    socket.Emit(SOCKET_COMMAND.serviceMessage,
-                        new { username = SERVICE_USER_NAME.admin, text = $"You joined the chat" });
-                    socket.Broadcast.Emit(SOCKET_COMMAND.message,
-                        new { username = SERVICE_USER_NAME.admin, text = $"User {user.Name} has joined the chat" });
-
-                    callback?.Invoke();
-                }
-                catch (Exception error)
-                {
-                    socket.Emit(SOCKET_COMMAND.usernameError,
-                        new { username = SERVICE_USER_NAME.admin, text = error.Message });
-                }
-            });
+            var user = _users.GetUserById(Context.ConnectionId);
+            await Clients.Others.SendAsync("messageReceived", user.name, messageText);
         }
 
-        private void ListenMessages(SocketIOSocket socket)
+        public async Task Join(string name)
         {
-            socket.On(SOCKET_COMMAND.sendMessage, messageText =>
+            try
             {
-                var user = users.GetUserById(socket.Id);
+                var user = _users.AddUser(Context.ConnectionId, name);
 
-                socket.Broadcast.Emit(SOCKET_COMMAND.message, new { username = user.Name, text = messageText });
-            });
-        }
-
-        private void OnDisconnect(SocketIOSocket socket)
-        {
-            socket.On(SOCKET_COMMAND.disconnect, () =>
-            {
-                var user = users.RemoveUser(socket.Id);
-                if (user != null)
-                {
-                    io.Emit(SOCKET_COMMAND.message,
-                        new { username = SERVICE_USER_NAME.admin, text = $"User {user.Name} has left the chat" });
-                }
-            });
-        }
-    }
-
-    public class Users
-    {
-        private readonly List<User> userList = new List<User>();
-
-        public User AddUser(string id, string name)
-        {
-            if (userList.Any(user => user.Name == name))
-            {
-                throw new Exception($"Username {name} is already taken.");
+                await Clients.Caller.SendAsync("serviceMessageReceived", "admin", "You joined the chat");
+                await Clients.Others.SendAsync("messageReceived", "admin", $"User {user.name} has joined the chat");
             }
-
-            var user = new User(id, name);
-            userList.Add(user);
-
-            return user;
+            catch (Exception ex)
+            {
+                await Clients.Caller.SendAsync("usernameError", "admin", ex.Message);
+            }
         }
 
-        public User GetUserById(string id)
+        public override async Task OnDisconnectedAsync(Exception exception)
         {
-            return userList.FirstOrDefault(user => user.Id == id);
-        }
+            var user = _users.RemoveUser(Context.ConnectionId);
 
-        public User RemoveUser(string id)
-        {
-            var user = GetUserById(id);
             if (user != null)
             {
-                userList.Remove(user);
+                await Clients.Others.SendAsync("messageReceived", "admin", $"User {user.name} has left the chat");
             }
 
-            return user;
+            await base.OnDisconnectedAsync(exception);
         }
     }
 
-    public class User
-    {
-        public User(string id, string name)
-        {
-            Id = id;
-            Name = name;
-        }
-
-        public string Id { get; }
-        public string Name { get; }
-    }
 }

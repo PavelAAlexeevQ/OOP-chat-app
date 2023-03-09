@@ -65,7 +65,7 @@ namespace ChatApp.Interface
 
         public IEnumerable<IUser> GetAllUsers() => usersByIdMap.Values;
 
-        private class User : IUser
+        public class User : IUser
         {
             public string id { get; set; }
             public string name { get; set; }
