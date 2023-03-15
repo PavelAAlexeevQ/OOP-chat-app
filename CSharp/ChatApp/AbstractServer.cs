@@ -38,7 +38,7 @@ namespace ChatApp
 
                     app.UseEndpoints(endpoints =>
                     {
-                        endpoints.MapHub<YourHub>("/yourhub");
+                        endpoints.MapHub<YourHub>("/chathub");
                     });
                 });
         }

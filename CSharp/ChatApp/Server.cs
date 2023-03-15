@@ -40,7 +40,7 @@ namespace ChatApp
 
         public ChatHub()
         {
-            var host = builder.Build();
+            //var host = builder.Build();
         }
         public override void Start()
         {

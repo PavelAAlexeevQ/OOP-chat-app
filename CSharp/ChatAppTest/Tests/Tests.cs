@@ -1,13 +1,12 @@
 using System;
 using System.Threading.Tasks;
-using Xunit;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace ChatApp.Tests
 {
     public class ChatAppTests
     {
-        private const string SOCKET_CLIENT_ADDRESS = "http://localhost:3001";
+        private const string SOCKET_CLIENT_ADDRESS = "http://localhost:52916";
         private HubConnection connection;
 
         [Fact]
