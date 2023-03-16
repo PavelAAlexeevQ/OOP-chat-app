@@ -32,7 +32,7 @@ namespace ChatApp
                 endpoints.MapHub<ChatHub>("/chatHub");
             });
         }
-    }
+    } 
 
     public class ChatHub : AbstractServer
     {

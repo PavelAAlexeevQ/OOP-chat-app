@@ -84,7 +84,7 @@ namespace ChatApp
     {
         static async Task Main(string[] args)
         {
-            string url = "http://localhost:5000/chatHub";
+            string url = "http://localhost:3001/chatHub";
             var client = new Client(url);
             await client.Start();
         }

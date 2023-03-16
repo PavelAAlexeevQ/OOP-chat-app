@@ -6,7 +6,7 @@ namespace ChatApp.Tests
 {
     public class ChatAppTests
     {
-        private const string SOCKET_CLIENT_ADDRESS = "http://localhost:52916";
+        private const string SOCKET_CLIENT_ADDRESS = "http://localhost:5000/chatHub";
         private HubConnection connection;
 
         [Fact]
