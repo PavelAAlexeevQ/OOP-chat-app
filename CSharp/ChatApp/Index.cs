@@ -19,7 +19,7 @@ namespace ChatApp
             startup.Configure(app, builder.Environment);
 
             Console.WriteLine("Server has started.");
-            Console.ReadLine();
+            //Console.ReadLine();
 
             await app.RunAsync();
             //var builder = WebApplication.CreateBuilder(args);
